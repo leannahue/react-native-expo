@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Text, View, TouchableOpacity } from "react-native";
 import { Camera } from "expo-camera";
 import * as Permissions from "expo-permissions";
@@ -9,17 +9,16 @@ import {
 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 
-export default class App extends React.Component {
-  state = {
-    hasPermission: null,
-    cameraType: Camera.Constants.Type.back
-  };
+const App = () => {
+  const [hasPermission, setHasPermission] = useState(null);
+  const [cameraType, setCameraType] = useState(Camera.Constants.Type.back);
+  const cameraRef = useRef(null);
 
-  async componentDidMount() {
-    this.getPermissionAsync();
-  }
+  useEffect(() => {
+    getPermissionAsync();
+  }, []);
 
-  getPermissionAsync = async () => {
+  const getPermissionAsync = async () => {
     // Camera roll Permission
     if (Platform.OS === "ios") {
       const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
@@ -29,99 +28,89 @@ export default class App extends React.Component {
     }
     // Camera Permission
     const { status } = await Permissions.askAsync(Permissions.CAMERA);
-    this.setState({ hasPermission: status === "granted" });
+    setHasPermission(status === "granted");
   };
 
-  handleCameraType = () => {
-    const { cameraType } = this.state;
-
-    this.setState({
-      cameraType:
-        cameraType === Camera.Constants.Type.back
-          ? Camera.Constants.Type.front
-          : Camera.Constants.Type.back
-    });
-  };
-
-  takePicture = async () => {
-    if (this.camera) {
-      let photo = await this.camera.takePictureAsync();
+  const handleCameraType = () => {
+    if (cameraType === Camera.Constants.Type.back) {
+      setCameraType(Camera.Constants.Type.front);
+    } else {
+      setCameraType(Camera.Constants.Type.back);
     }
   };
 
-  pickImage = async () => {
+  const takePicture = async () => {
+    if (cameraRef) {
+      let photo = await cameraRef.takePictureAsync();
+    }
+  };
+
+  const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images
     });
   };
 
-  render() {
-    const { hasPermission } = this.state;
-    if (hasPermission === null) {
-      return <View />;
-    } else if (hasPermission === false) {
-      return <Text>No access to camera</Text>;
-    } else {
-      return (
-        <View style={{ flex: 1 }}>
-          <Camera
-            style={{ flex: 1 }}
-            type={this.state.cameraType}
-            ref={ref => {
-              this.camera = ref;
+  if (hasPermission === null) {
+    return <View />;
+  } else if (hasPermission === false) {
+    return <Text>No access to camera</Text>;
+  } else {
+    return (
+      <View style={{ flex: 1 }}>
+        <Camera style={{ flex: 1 }} type={cameraType} ref={cameraRef}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              margin: 30
             }}
           >
-            <View
+            <TouchableOpacity
               style={{
-                flex: 1,
-                flexDirection: "row",
-                justifyContent: "space-between",
-                margin: 30
+                alignSelf: "flex-end",
+                alignItems: "center",
+                backgroundColor: "transparent"
               }}
+              onPress={() => pickImage()}
             >
-              <TouchableOpacity
-                style={{
-                  alignSelf: "flex-end",
-                  alignItems: "center",
-                  backgroundColor: "transparent"
-                }}
-                onPress={() => this.pickImage()}
-              >
-                <Ionicons
-                  name="ios-photos"
-                  style={{ color: "#fff", fontSize: 40 }}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  alignSelf: "flex-end",
-                  alignItems: "center",
-                  backgroundColor: "transparent"
-                }}
-                onPress={() => this.takePicture()}
-              >
-                <FontAwesome
-                  name="camera"
-                  style={{ color: "#fff", fontSize: 40 }}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  alignSelf: "flex-end",
-                  alignItems: "center",
-                  backgroundColor: "transparent"
-                }}
-                onPress={() => this.handleCameraType()}
-              >
-                <MaterialCommunityIcons
-                  name="camera-switch"
-                  style={{ color: "#fff", fontSize: 40 }}
-                />
-              </TouchableOpacity>
-            </View>
-          </Camera>
-        </View>
-      );
-    }
+              <Ionicons
+                name="ios-photos"
+                style={{ color: "#fff", fontSize: 40 }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                alignSelf: "flex-end",
+                alignItems: "center",
+                backgroundColor: "transparent"
+              }}
+              onPress={() => takePicture()}
+            >
+              <FontAwesome
+                name="camera"
+                style={{ color: "#fff", fontSize: 40 }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                alignSelf: "flex-end",
+                alignItems: "center",
+                backgroundColor: "transparent"
+              }}
+              onPress={() => handleCameraType()}
+            >
+              <MaterialCommunityIcons
+                name="camera-switch"
+                style={{ color: "#fff", fontSize: 40 }}
+              />
+            </TouchableOpacity>
+          </View>
+        </Camera>
+      </View>
+    );
   }
-}
+};
+
+export default App;
